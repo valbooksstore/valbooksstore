@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Terms and Conditions — ValBooksStore</title>
+<link rel="icon" type="image/png" href="images/favicon.png" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="wrap">
+    <a href="index.html" class="brand">
+      <img src="images/logo.png" alt="ValBooksStore" />
+    </a>
+    <div class="nav-links">
+      <a href="index.html#shop">Shop</a>
+      <a href="wishlist.html" class="nav-cart">Wishlist <span class="count" data-wishlist-count style="display:none">0</span></a>
+      <a href="cart.html" class="nav-cart">Cart <span class="count" data-cart-count style="display:none">0</span></a>
+    </div>
+    <button class="nav-toggle btn btn-ghost" aria-label="Menu">☰</button>
+  </div>
+</nav>
+
+<section class="legal-section">
+  <div class="wrap">
+    <div class="legal-content">
+      <h1>Terms and Conditions</h1>
+      <p class="legal-updated">Last updated: August 2026</p>
+
+      <p>These Terms and Conditions ("Terms") govern your use of the website valbooksstore.com ("Site") and any purchase you make through it. The Site is operated by <strong>Green Swan Corporation</strong>, trading as <strong>ValBooksStore</strong> ("we," "us," "our"). By browsing the Site or placing an order, you agree to these Terms.</p>
+
+      <h2>1. About us</h2>
+      <p>ValBooksStore is an independent comic book publisher and online store selling original children's comics, written by Laxmi Narasimhan K and illustrated by Naganath Gowripura, available in multiple regional languages, including embossed Braille editions.</p>
+
+      <h2>2. Products and pricing</h2>
+      <p>All prices on the Site are listed in Indian Rupees (₹) and are inclusive of applicable taxes unless stated otherwise. We reserve the right to change prices, descriptions, or availability of any product at any time without prior notice. Book cover images are illustrative; minor variations in print finish may occur between batches.</p>
+
+      <h2>3. Orders and payment</h2>
+      <p>You do not need to create an account to place an order — you provide your name, email, phone number and delivery address at checkout. Orders are confirmed only once payment is successfully received through our payment partner, Razorpay. We accept payment via credit/debit cards, UPI, net banking and supported wallets.</p>
+
+      <h2>4. Shipping and delivery</h2>
+      <p>We aim to dispatch orders within a reasonable timeframe and ship via third-party courier partners. Delivery timelines are estimates and may vary due to courier delays, weather, or circumstances outside our control. Once your order is dispatched, you will receive an email with tracking information where available.</p>
+
+      <h2>5. Cancellations and refunds</h2>
+      <p>Please see our <a href="cancellation-policy.html">Cancellation Policy</a> and <a href="refund-policy.html">Refund Policy</a> for details on how these are handled.</p>
+
+      <h2>6. Intellectual property</h2>
+      <p>All content on this Site — including but not limited to book cover art, illustrations, character designs, text, and the ValBooksStore name and logo — is the property of Green Swan Corporation / ValBooksStore and its creators, and is protected by applicable copyright and trademark laws. You may not reproduce, distribute, or use this content without our prior written permission.</p>
+
+      <h2>7. User conduct</h2>
+      <p>You agree to use the Site only for lawful purposes and to provide accurate information when placing an order. We reserve the right to refuse or cancel any order we reasonably suspect to be fraudulent or in violation of these Terms.</p>
+
+      <h2>8. Limitation of liability</h2>
+      <p>To the extent permitted by law, ValBooksStore and Green Swan Corporation shall not be liable for any indirect, incidental, or consequential damages arising from your use of the Site or purchase of our products, beyond the value of the order in question.</p>
+
+      <h2>9. Governing law</h2>
+      <p>These Terms are governed by the laws of India. Any disputes arising from these Terms or your use of the Site shall be subject to the jurisdiction of the courts of India.</p>
+
+      <h2>10. Changes to these Terms</h2>
+      <p>We may update these Terms from time to time. Continued use of the Site after changes are posted constitutes acceptance of the revised Terms.</p>
+
+      <h2>11. Contact us</h2>
+      <p>For any questions about these Terms, please contact us at <a href="mailto:valbooksstore@gmail.com">valbooksstore@gmail.com</a>.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <a href="index.html" class="footer-brand" id="footerLogo">
+          <img src="images/logo.png" alt="ValBooksStore" />
+        </a>
+        <p class="footer-note">An independent comic publisher — every story across multiple regional languages, including embossed Braille editions.</p>
+      </div>
+      <div class="footer-links">
+        <a href="index.html#shop">Shop</a>
+        <a href="terms.html">Terms</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="refund-policy.html">Refunds</a>
+        <a href="cancellation-policy.html">Cancellations</a>
+      </div>
+    </div>
+    <div class="footer-bottom">© <span id="year"></span> ValBooksStore. All rights reserved.</div>
+  </div>
+</footer>
+
+<script type="module">
+  import { initNav } from "./js/ui.js";
+  document.getElementById("year").textContent = new Date().getFullYear();
+  initNav();
+</script>
+</body>
+</html>

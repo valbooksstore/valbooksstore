@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin Dashboard — ValBooksStore</title>
+<link rel="icon" type="image/png" href="../images/favicon.png" />
+<link rel="stylesheet" href="../css/style.css" />
+</head>
+<body class="admin-shell">
+
+<header class="admin-header">
+  <div class="wrap">
+    <div class="brand">
+      <img src="../images/logo.png" alt="ValBooksStore" />
+      <span style="opacity:.6; font-weight:400; font-size:15px; margin-left:8px; font-family:var(--font-ui); color:var(--ink);">Admin</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:14px;">
+      <a href="../index.html" class="btn btn-ghost">View shop</a>
+      <button id="logoutBtn" class="btn btn-outline">Log out</button>
+    </div>
+  </div>
+</header>
+
+<main class="admin-main">
+  <div class="wrap">
+    <div id="setupBanner"></div>
+
+    <div class="tab-row">
+      <button class="tab-btn active" data-tab="catalogue">Catalogue</button>
+      <button class="tab-btn" data-tab="orders">Order history</button>
+      <button class="tab-btn" data-tab="settings">Settings</button>
+    </div>
+
+    <div id="cataloguePanel" class="tab-panel active">
+    <div class="admin-grid">
+      <div class="admin-card">
+        <h3 style="margin-top:0;" id="bookFormTitle">Add a book</h3>
+        <div id="formMsg" class="form-msg"></div>
+        <form id="bookForm">
+          <div class="field">
+            <label for="title">Title</label>
+            <input id="title" required />
+          </div>
+          <div class="field">
+            <label for="author">Author (optional)</label>
+            <input id="author" placeholder="e.g. Laxmi Narasimhan K" />
+          </div>
+          <div class="field">
+            <label for="language">Language</label>
+            <select id="language" required></select>
+            <div class="hint">Don't see the one you need? Add it under "Manage languages" below.</div>
+          </div>
+          <div class="row-2">
+            <div class="field">
+              <label for="mrp">MRP (optional)</label>
+              <input id="mrp" type="number" min="0" step="1" placeholder="e.g. 449" />
+            </div>
+            <div class="field">
+              <label for="price">Selling price (₹)</label>
+              <input id="price" type="number" min="0" step="1" required />
+            </div>
+          </div>
+          <div class="hint" style="margin:-8px 0 16px;">Set an MRP higher than the price to show a strikethrough discount on the shop page.</div>
+          <div class="field">
+            <label for="description">Description</label>
+            <textarea id="description" placeholder="A short summary shown on the book page"></textarea>
+          </div>
+          <div class="field">
+            <label for="cover">Cover image</label>
+            <input id="cover" type="file" accept="image/*" />
+            <div class="hint" id="coverHint">Uploaded to imgBB and linked to this book.</div>
+          </div>
+          <button class="btn btn-primary btn-block" type="submit" id="submitBtn">Add to shop</button>
+          <button class="btn btn-ghost btn-block" type="button" id="cancelEditBtn" style="display:none; margin-top:8px;">Cancel edit</button>
+        </form>
+      </div>
+
+      <div>
+        <h3 style="margin-top:0;">Current catalogue</h3>
+        <div class="admin-table-wrap">
+          <table>
+            <thead>
+              <tr><th></th><th>Title</th><th>Language</th><th class="num">Price</th><th></th></tr>
+            </thead>
+            <tbody id="bookRows">
+              <tr><td colspan="5" style="text-align:center; color:var(--muted); padding:32px;">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 style="margin:36px 0 0;">Manage languages</h3>
+        <p style="font-family:var(--font-ui); font-size:13.5px; color:var(--muted); margin-top:4px;">These show up as filter tabs on the shop page and in the language dropdown above. Toggle "Braille" for any language that's a Braille edition — that's what decides its badge design on the shop page (dark, dotted) vs. every other language (plain orange).</p>
+        <div class="admin-table-wrap" style="margin-top:14px;">
+          <table>
+            <thead><tr><th>Language</th><th>Code</th><th>Braille?</th><th></th></tr></thead>
+            <tbody id="languageRows">
+              <tr><td colspan="4" style="text-align:center; color:var(--muted); padding:24px;">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <form id="languageForm" style="display:flex; gap:10px; margin-top:14px; align-items:flex-end; flex-wrap:wrap;">
+          <div class="field" style="margin-bottom:0; flex:1; min-width:160px;">
+            <label for="newLangLabel">Language name</label>
+            <input id="newLangLabel" placeholder="e.g. Kannada" required />
+          </div>
+          <label style="display:flex; align-items:center; gap:7px; font-family:var(--font-ui); font-size:13.5px; color:var(--ink); padding-bottom:11px;">
+            <input type="checkbox" id="newLangIsBraille" /> This is a Braille edition
+          </label>
+          <button class="btn btn-outline" type="submit" id="addLangBtn">Add language</button>
+        </form>
+        <div id="langMsg" class="form-msg" style="margin-top:12px;"></div>
+      </div>
+    </div>
+    </div>
+
+    <div id="ordersPanel" class="tab-panel">
+      <div id="ordersList"><div class="empty-state">Loading…</div></div>
+    </div>
+
+    <div id="settingsPanel" class="tab-panel">
+      <div class="admin-card" style="max-width:560px;">
+        <h3 style="margin-top:0;">Payment gateway (Razorpay)</h3>
+        <p style="font-family:var(--font-ui); font-size:13.5px; color:var(--muted); margin-top:-4px;">
+          Paste your Razorpay Key ID here to turn on real payments at checkout. Start with a
+          <strong>test key</strong> (<code>rzp_test_...</code>) to try it safely — no real money moves.
+          Once your Razorpay account is fully verified, replace it with your <strong>live key</strong>
+          (<code>rzp_live_...</code>) right here — no code changes, no redeploy.
+        </p>
+        <div id="razorpayMsg" class="form-msg"></div>
+        <form id="razorpayForm">
+          <div class="field">
+            <label for="razorpayKeyId">Razorpay Key ID</label>
+            <input id="razorpayKeyId" placeholder="rzp_test_xxxxxxxxxxxxx" />
+            <div class="hint" id="razorpayStatusHint">Checking current status…</div>
+          </div>
+          <button class="btn btn-primary btn-block" type="submit" id="razorpaySaveBtn">Save</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+  import { auth, isConfigured, onAuthStateChanged, signOut } from "../js/firebase-init.js";
+  import { isAdminEmail, formatPrice, langLabel, setLanguageCache, showToast } from "../js/ui.js";
+  import { getBooks, addBook, updateBook, deleteBook, getLanguages, addLanguage, deleteLanguage, setLanguageIsBraille, getAllOrders, updateOrderStatus, updateTrackingInfo, getSettings, saveSettings } from "../js/db.js";
+  import { uploadCoverImage } from "../js/imgbb.js";
+  import { sendDispatchedEmail, sendDeliveredEmail } from "../js/email.js";
+
+  const setupBanner = document.getElementById("setupBanner");
+  const form = document.getElementById("bookForm");
+  const languageForm = document.getElementById("languageForm");
+
+  // ---------------- Tabs ----------------
+  document.querySelectorAll(".tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+      document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById(btn.dataset.tab + "Panel").classList.add("active");
+    });
+  });
+
+  if (!isConfigured()) {
+    setupBanner.innerHTML = `<div class="setup-banner">
+      <strong>This is a demo build.</strong> Add your Firebase project details in <code>js/config.js</code> to manage
+      real books, and your imgBB key to upload cover images. See <code>README.md</code> for the full setup guide.
+    </div>`;
+    form.querySelector("button[type=submit]").disabled = true;
+    languageForm.querySelector("button[type=submit]").disabled = true;
+    document.getElementById("bookRows").innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--muted); padding:32px;">Connect Firebase to see your catalogue here.</td></tr>`;
+    document.getElementById("languageRows").innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--muted); padding:24px;">Connect Firebase to manage languages here.</td></tr>`;
+    document.getElementById("ordersList").innerHTML = `<div class="empty-state">Connect Firebase to see order history here.</div>`;
+    document.getElementById("razorpayForm").querySelector("button[type=submit]").disabled = true;
+    document.getElementById("razorpayStatusHint").textContent = "Connect Firebase to configure payments here.";
+  } else {
+    onAuthStateChanged(auth, (user) => {
+      if (!user || !isAdminEmail(user.email)) {
+        window.location.href = "login.html";
+      } else {
+        loadLanguages().then(loadBooks);
+        loadOrders();
+        loadRazorpaySettings();
+      }
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await signOut(auth);
+      window.location.href = "login.html";
+    });
+  }
+
+  // ---------------- Languages ----------------
+
+  async function loadLanguages() {
+    const languages = await getLanguages();
+    setLanguageCache(languages);
+
+    // Populate the "Add a book" language dropdown
+    const select = document.getElementById("language");
+    select.innerHTML = languages.map((l) => `<option value="${l.code}">${l.label}</option>`).join("");
+
+    // Populate the language management table
+    const tbody = document.getElementById("languageRows");
+    tbody.innerHTML = languages.map((l) => `
+      <tr>
+        <td>${l.label}</td>
+        <td style="color:var(--muted); font-family:monospace; font-size:12.5px;">${l.code}</td>
+        <td><input type="checkbox" data-braille-toggle="${l.code}" ${l.isBraille ? "checked" : ""} /></td>
+        <td><button class="btn btn-danger" data-delete-lang="${l.code}" style="padding:6px 11px; font-size:12px;">Remove</button></td>
+      </tr>
+    `).join("");
+
+    tbody.querySelectorAll("[data-braille-toggle]").forEach((checkbox) => {
+      checkbox.addEventListener("change", async () => {
+        checkbox.disabled = true;
+        try {
+          await setLanguageIsBraille(checkbox.dataset.brailleToggle, checkbox.checked);
+          showToast(`"${langLabel(checkbox.dataset.brailleToggle)}" updated.`);
+          await loadLanguages();
+        } catch (err) {
+          showToast(err.message || "Couldn't update that language.");
+          checkbox.checked = !checkbox.checked;
+          checkbox.disabled = false;
+        }
+      });
+    });
+
+    tbody.querySelectorAll("[data-delete-lang]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!confirm("Remove this language? Books already using it will keep showing it, but it will no longer appear as a filter option or in the dropdown.")) return;
+        btn.disabled = true;
+        try {
+          await deleteLanguage(btn.dataset.deleteLang);
+          showToast("Language removed.");
+          await loadLanguages();
+        } catch (err) {
+          showToast(err.message || "Couldn't remove that language.");
+          btn.disabled = false;
+        }
+      });
+    });
+
+    return languages;
+  }
+
+  const langMsg = document.getElementById("langMsg");
+  languageForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const addBtn = document.getElementById("addLangBtn");
+    const input = document.getElementById("newLangLabel");
+    const isBrailleCheckbox = document.getElementById("newLangIsBraille");
+    const label = input.value.trim();
+    if (!label) return;
+
+    addBtn.disabled = true;
+    addBtn.textContent = "Adding…";
+    try {
+      await addLanguage({ code: label, label, isBraille: isBrailleCheckbox.checked });
+      input.value = "";
+      isBrailleCheckbox.checked = false;
+      langMsg.textContent = `"${label}" added — it'll now show up as a filter on the shop page.`;
+      langMsg.className = "form-msg show success";
+      showToast(`"${label}" added as a language.`);
+      await loadLanguages();
+    } catch (err) {
+      langMsg.textContent = err.message || "Couldn't add that language.";
+      langMsg.className = "form-msg show error";
+    } finally {
+      addBtn.disabled = false;
+      addBtn.textContent = "Add language";
+    }
+  });
+
+  // ---------------- Books ----------------
+
+  async function loadBooks() {
+    const tbody = document.getElementById("bookRows");
+    const books = await getBooks();
+
+    if (!books.length) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--muted); padding:32px;">No books yet — add your first one on the left.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = books.map((b) => `
+      <tr>
+        <td>${b.coverImageUrl ? `<img class="thumb" src="${b.coverImageUrl}" alt="" />` : `<div class="thumb" style="display:grid;place-items:center;font-size:9px;color:var(--muted);">—</div>`}</td>
+        <td>${b.title}</td>
+        <td><span class="badge-lang">${langLabel(b.language)}</span></td>
+        <td class="num">
+          ${Number(b.mrp) > Number(b.price) ? `<span style="text-decoration:line-through; color:var(--muted); font-size:12px; margin-right:6px;">${formatPrice(b.mrp)}</span>` : ""}
+          ${formatPrice(b.price)}
+        </td>
+        <td style="white-space:nowrap;">
+          <button class="btn btn-outline" data-edit="${b.id}" style="padding:7px 12px; font-size:12px; margin-right:6px;">Edit</button>
+          <button class="btn btn-danger" data-delete="${b.id}" style="padding:7px 12px; font-size:12px;">Remove</button>
+        </td>
+      </tr>
+    `).join("");
+
+    tbody.querySelectorAll("[data-edit]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const book = books.find((b) => b.id === btn.dataset.edit);
+        startEditingBook(book);
+      });
+    });
+
+    tbody.querySelectorAll("[data-delete]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!confirm("Remove this book from the shop?")) return;
+        btn.disabled = true;
+        btn.textContent = "Removing…";
+        try {
+          await deleteBook(btn.dataset.delete);
+          showToast("Book removed from the shop.");
+          loadBooks();
+        } catch (err) {
+          showToast(err.message || "Couldn't remove the book.");
+          btn.disabled = false;
+          btn.textContent = "Remove";
+        }
+      });
+    });
+  }
+
+  const msg = document.getElementById("formMsg");
+  function showMsg(text, type) {
+    msg.textContent = text;
+    msg.className = `form-msg show ${type}`;
+  }
+
+  // ---------------- Add / Edit book (shared form) ----------------
+  let editingBook = null; // null = adding a new book; set = editing this book
+
+  function startEditingBook(book) {
+    editingBook = book;
+    document.getElementById("bookFormTitle").textContent = `Editing “${book.title}”`;
+    document.getElementById("title").value = book.title || "";
+    document.getElementById("author").value = book.author || "";
+    document.getElementById("language").value = book.language || "";
+    document.getElementById("mrp").value = book.mrp || "";
+    document.getElementById("price").value = book.price != null ? book.price : "";
+    document.getElementById("description").value = book.description || "";
+    document.getElementById("cover").value = "";
+    document.getElementById("coverHint").textContent = book.coverImageUrl
+      ? "Leave empty to keep the current cover, or choose a new image to replace it."
+      : "Uploaded to imgBB and linked to this book.";
+    document.getElementById("submitBtn").textContent = "Save changes";
+    document.getElementById("cancelEditBtn").style.display = "block";
+    msg.className = "form-msg";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function stopEditingBook() {
+    editingBook = null;
+    form.reset();
+    document.getElementById("bookFormTitle").textContent = "Add a book";
+    document.getElementById("coverHint").textContent = "Uploaded to imgBB and linked to this book.";
+    document.getElementById("submitBtn").textContent = "Add to shop";
+    document.getElementById("cancelEditBtn").style.display = "none";
+  }
+
+  document.getElementById("cancelEditBtn").addEventListener("click", stopEditingBook);
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const submitBtn = document.getElementById("submitBtn");
+    submitBtn.disabled = true;
+    submitBtn.textContent = editingBook ? "Saving…" : "Adding…";
+
+    try {
+      const fileInput = document.getElementById("cover");
+      let coverImageUrl = editingBook ? editingBook.coverImageUrl || "" : "";
+      if (fileInput.files[0]) {
+        submitBtn.textContent = "Uploading cover…";
+        coverImageUrl = await uploadCoverImage(fileInput.files[0]);
+      }
+
+      const mrpValue = document.getElementById("mrp").value;
+
+      const bookData = {
+        title: document.getElementById("title").value.trim(),
+        author: document.getElementById("author").value.trim(),
+        language: document.getElementById("language").value,
+        price: Number(document.getElementById("price").value),
+        mrp: mrpValue ? Number(mrpValue) : null,
+        description: document.getElementById("description").value.trim(),
+        coverImageUrl,
+      };
+
+      if (editingBook) {
+        await updateBook(editingBook.id, bookData);
+        showMsg("Book updated.", "success");
+        showToast("Book updated — changes are live on the shop page now.");
+        stopEditingBook();
+      } else {
+        await addBook(bookData);
+        form.reset();
+        showMsg("Book added to the shop.", "success");
+        showToast("Book added — it's live on the shop page now.");
+      }
+
+      loadBooks();
+    } catch (err) {
+      console.error(err);
+      showMsg(err.message || "Couldn't save the book. Please try again.", "error");
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = editingBook ? "Save changes" : "Add to shop";
+    }
+  });
+
+  // ---------------- Orders ----------------
+
+  const STATUS_FLOW = {
+    placed: { next: "dispatched", label: "Mark as dispatched" },
+    dispatched: { next: "completed", label: "Mark as completed" },
+    completed: null,
+  };
+
+  async function loadOrders() {
+    const el = document.getElementById("ordersList");
+    let orders;
+    try {
+      orders = await getAllOrders();
+    } catch (err) {
+      console.error("Failed to load orders:", err);
+      const indexLink = err?.message?.match(/https:\/\/console\.firebase\.google\.com\S+/)?.[0];
+      el.innerHTML = `<div class="setup-banner">
+        <strong>Couldn't load orders.</strong>
+        ${indexLink
+          ? `Firestore needs a one-time index for this. <a href="${indexLink}" target="_blank" rel="noopener">Click here to create it</a>, wait a minute, then refresh.`
+          : `Open your browser console (F12) for the exact error, or check the Firestore rules from the README are published.`}
+      </div>`;
+      return;
+    }
+
+    if (!orders.length) {
+      el.innerHTML = `<div class="empty-state"><h3>No orders yet</h3><p>Orders will show up here as customers place them.</p></div>`;
+      return;
+    }
+
+    el.innerHTML = orders.map((o) => {
+      const status = o.status || "placed";
+      const action = STATUS_FLOW[status];
+      const addressLine = [o.address, o.city, o.state, o.pincode].filter(Boolean).join(", ");
+      const showTracking = status === "dispatched" || status === "completed";
+      return `
+        <div class="order-card">
+          <div class="order-head">
+            <span class="order-id">Order #${o.orderId || o.id.slice(0, 8).toUpperCase()}</span>
+            <span class="order-status status-${status}">${status}</span>
+          </div>
+          <div class="order-date">${o.createdAt?.toDate ? o.createdAt.toDate().toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" }) : ""}</div>
+
+          <div style="font-family:var(--font-ui); font-size:13.5px; color:var(--ink-soft); margin:10px 0; line-height:1.6;">
+            <strong style="color:var(--ink);">${o.name || "-"}</strong><br />
+            ${o.email || ""}${o.phone ? ` · ${o.phone}` : ""}<br />
+            ${addressLine || "-"}
+            ${o.paymentStatus === "not_configured" ? `<br /><span style="color:var(--muted); font-size:12px;">Payment: not collected (Razorpay wasn't connected yet)</span>` : ""}
+          </div>
+
+          ${o.items.map((i) => `<div class="order-item-row"><span>${i.title} × ${i.qty}</span><span>${formatPrice(i.price * i.qty)}</span></div>`).join("")}
+          <div class="order-total">${formatPrice(o.total)}</div>
+
+          <div style="display:flex; gap:10px; margin-top:14px;">
+            <button class="btn btn-outline" data-invoice="${o.id}" style="flex:1;">Download invoice</button>
+            ${action ? `<button class="btn btn-primary" data-advance="${o.id}" data-next="${action.next}" style="flex:1;">${action.label}</button>` : ""}
+          </div>
+
+          ${showTracking ? `
+            <div style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
+              <div style="font-family:var(--font-ui); font-size:11.5px; font-weight:700; color:var(--ink); text-transform:uppercase; letter-spacing:.04em; margin-bottom:8px;">Courier tracking</div>
+              ${o.trackingNumber ? `<div style="font-family:var(--font-ui); font-size:13px; color:var(--ink-soft); margin-bottom:8px;">${o.courier ? `${o.courier} · ` : ""}<strong style="color:var(--ink);">${o.trackingNumber}</strong></div>` : ""}
+              <div class="row-2" style="margin-bottom:8px;">
+                <input data-courier="${o.id}" placeholder="Courier (e.g. India Post)" value="${o.courier || ""}" style="font-size:13px; padding:9px 11px;" />
+                <input data-tracking="${o.id}" placeholder="Tracking number" value="${o.trackingNumber || ""}" style="font-size:13px; padding:9px 11px;" />
+              </div>
+              <button class="btn btn-outline btn-block" data-save-tracking="${o.id}" style="font-size:12.5px; padding:9px;">${o.trackingNumber ? "Update tracking & re-notify customer" : "Save tracking & notify customer"}</button>
+            </div>
+          ` : ""}
+        </div>
+      `;
+    }).join("");
+
+    el.querySelectorAll("[data-advance]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.dataset.advance;
+        const next = btn.dataset.next;
+        const order = orders.find((o) => o.id === id);
+        btn.disabled = true;
+        btn.textContent = "Updating…";
+        try {
+          await updateOrderStatus(id, next);
+
+          // "Dispatched" alone does NOT email the customer — that only
+          // happens when tracking info is saved (see [data-save-tracking]
+          // below), so the shipped email always has real tracking details.
+          if (next === "completed") {
+            await sendDeliveredEmail({
+              toEmail: order.email,
+              toName: order.name,
+              orderId: order.orderId || id,
+            });
+            showToast(`Order marked as ${next} — customer notified by email.`);
+          } else {
+            showToast(`Order marked as ${next}.`);
+          }
+
+          loadOrders();
+        } catch (err) {
+          showToast(err.message || "Couldn't update the order.");
+          btn.disabled = false;
+        }
+      });
+    });
+
+    el.querySelectorAll("[data-invoice]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const order = orders.find((o) => o.id === btn.dataset.invoice);
+        btn.disabled = true;
+        btn.textContent = "Preparing…";
+        try {
+          const { downloadInvoice } = await import("../js/invoice.js");
+          await downloadInvoice(order);
+        } catch (err) {
+          showToast(err.message || "Couldn't generate the invoice.");
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Download invoice";
+        }
+      });
+    });
+
+    el.querySelectorAll("[data-save-tracking]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.dataset.saveTracking;
+        const courier = el.querySelector(`[data-courier="${id}"]`).value.trim();
+        const trackingNumber = el.querySelector(`[data-tracking="${id}"]`).value.trim();
+        if (!trackingNumber) {
+          showToast("Enter a tracking number first.");
+          return;
+        }
+        const order = orders.find((o) => o.id === id);
+        btn.disabled = true;
+        btn.textContent = "Saving…";
+        try {
+          await updateTrackingInfo(id, { courier, trackingNumber });
+          // Re-sends the "dispatched" email, now with tracking details included.
+          await sendDispatchedEmail({
+            toEmail: order.email,
+            toName: order.name,
+            orderId: order.orderId || id,
+            courier,
+            trackingNumber,
+          });
+          showToast("Tracking info saved — customer notified by email.");
+          loadOrders();
+        } catch (err) {
+          showToast(err.message || "Couldn't save tracking info.");
+          btn.disabled = false;
+          btn.textContent = "Save tracking & notify customer";
+        }
+      });
+    });
+  }
+
+  // ---------------- Settings (Razorpay) ----------------
+
+  function describeKey(keyId) {
+    if (!keyId) return { text: "Not configured yet — checkout will let customers place orders without payment until you add a key.", cls: "" };
+    if (keyId.startsWith("rzp_live_")) return { text: "Live key active — checkout is collecting real payments.", cls: "success" };
+    if (keyId.startsWith("rzp_test_")) return { text: "Test key active — checkout works, but no real money moves yet.", cls: "" };
+    return { text: "Key saved — double check it's a real Razorpay Key ID (should start with rzp_test_ or rzp_live_).", cls: "error" };
+  }
+
+  async function loadRazorpaySettings() {
+    const hint = document.getElementById("razorpayStatusHint");
+    try {
+      const settings = await getSettings();
+      const keyId = settings?.razorpayKeyId || "";
+      document.getElementById("razorpayKeyId").value = keyId;
+      const status = describeKey(keyId);
+      hint.textContent = status.text;
+      hint.style.color = status.cls === "error" ? "var(--error)" : status.cls === "success" ? "var(--success)" : "var(--muted)";
+    } catch (err) {
+      hint.textContent = "Couldn't load the current status — try refreshing the page.";
+    }
+  }
+
+  document.getElementById("razorpayForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const saveBtn = document.getElementById("razorpaySaveBtn");
+    const msg = document.getElementById("razorpayMsg");
+    const keyId = document.getElementById("razorpayKeyId").value.trim();
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving…";
+    try {
+      await saveSettings({ razorpayKeyId: keyId });
+      msg.textContent = keyId ? "Saved — checkout will now collect payment through Razorpay." : "Saved — payment is now turned off at checkout.";
+      msg.className = "form-msg show success";
+      showToast("Razorpay settings updated.");
+      loadRazorpaySettings();
+    } catch (err) {
+      msg.textContent = err.message || "Couldn't save. Please try again.";
+      msg.className = "form-msg show error";
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Save";
+    }
+  });
+</script>
+</body>
+</html>

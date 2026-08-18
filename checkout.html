@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Checkout — ValBooksStore</title>
+<link rel="icon" type="image/png" href="images/favicon.png" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="wrap">
+    <a href="index.html" class="brand">
+      <img src="images/logo.png" alt="ValBooksStore" />
+    </a>
+    <div class="nav-links">
+      <a href="index.html#shop">Shop</a>
+      <a href="wishlist.html" class="nav-cart">Wishlist <span class="count" data-wishlist-count style="display:none">0</span></a>
+      <a href="cart.html" class="nav-cart">Cart <span class="count" data-cart-count style="display:none">0</span></a>
+    </div>
+    <button class="nav-toggle btn btn-ghost" aria-label="Menu">☰</button>
+  </div>
+</nav>
+
+<section class="cart-section">
+  <div class="wrap">
+    <h1>Checkout</h1>
+    <div id="checkoutContent"></div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-links" style="margin-bottom:20px;">
+      <a href="index.html#shop">Shop</a>
+      <a href="terms.html">Terms</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="refund-policy.html">Refunds</a>
+      <a href="cancellation-policy.html">Cancellations</a>
+    </div>
+    <div class="footer-bottom">© <span id="year"></span> ValBooksStore. All rights reserved.</div>
+  </div>
+</footer>
+
+<script type="module">
+  import { getCart, cartTotal, clearCart } from "./js/cart.js";
+  import { initNav, formatPrice, showToast } from "./js/ui.js";
+  import { createOrder } from "./js/db.js";
+  import { sendOrderConfirmationEmail, sendAdminNewOrderAlert } from "./js/email.js";
+  import { isConfigured } from "./js/firebase-init.js";
+  import { openRazorpayCheckout, isRazorpayConfigured, loadRazorpayConfig } from "./js/razorpay.js";
+
+  document.getElementById("year").textContent = new Date().getFullYear();
+  initNav();
+
+  const el = document.getElementById("checkoutContent");
+  const items = getCart();
+
+  (async () => {
+  if (!items.length) {
+    el.innerHTML = `<div class="empty-state">
+      <h3>Your cart is empty</h3>
+      <p>Add a book before checking out.</p>
+      <a href="index.html#shop" class="btn btn-primary" style="margin-top:16px;">Browse the shop</a>
+    </div>`;
+  } else if (!isConfigured()) {
+    el.innerHTML = `<div class="setup-banner">
+      <strong>Checkout needs Firebase.</strong> This is a demo build — add your Firebase project details in
+      <code>js/config.js</code> to enable order storage. See <code>README.md</code>.
+    </div>`;
+  } else {
+    await loadRazorpayConfig();
+    const paymentsReady = isRazorpayConfigured();
+    el.innerHTML = `
+      ${paymentsReady ? "" : `<div class="setup-banner">
+        <strong>Payment isn't connected yet.</strong> Orders will be saved and invoiced normally — once you add your
+        Razorpay Key ID in the admin dashboard's <strong>Settings</strong> tab, checkout will automatically switch to
+        collecting real payment. No code changes needed.
+      </div>`}
+      <div class="cart-layout">
+        <form id="checkoutForm">
+          <div class="admin-card">
+            <h3 style="margin-top:0;">Your details</h3>
+            <div class="field">
+              <label for="name">Full name</label>
+              <input id="name" required />
+            </div>
+            <div class="field">
+              <label for="email">Email</label>
+              <input id="email" type="email" required placeholder="you@example.com" />
+              <div class="hint">Your order confirmation and invoice go here.</div>
+            </div>
+            <div class="field">
+              <label for="phone">Phone number</label>
+              <input id="phone" type="tel" required placeholder="+91 98765 43210" />
+              <div class="hint">Used only by our courier partner to coordinate delivery — never shared for marketing.</div>
+            </div>
+
+            <h3 style="margin:24px 0 14px;">Delivery address</h3>
+            <div class="field">
+              <label for="address">Address</label>
+              <textarea id="address" required placeholder="House no., street, locality"></textarea>
+            </div>
+            <div class="row-2">
+              <div class="field">
+                <label for="city">City</label>
+                <input id="city" required placeholder="e.g. Bengaluru" />
+              </div>
+              <div class="field">
+                <label for="state">State</label>
+                <input id="state" required placeholder="e.g. Karnataka" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="pincode">PIN code</label>
+              <input id="pincode" required placeholder="e.g. 560001" />
+            </div>
+
+            <button class="btn btn-primary btn-block" type="submit" style="margin-top:10px;">${paymentsReady ? "Proceed to payment" : "Place order"}</button>
+            <p style="font-family:var(--font-ui); font-size:12px; color:var(--muted); text-align:center; margin:12px 0 0;">
+              No account needed — you'll get your invoice by email and can download it here right after ${paymentsReady ? "payment" : "placing your order"}.
+            </p>
+          </div>
+        </form>
+        <aside class="summary-card">
+          <h3 style="margin-top:0;">Order summary</h3>
+          ${items.map((i) => `<div class="summary-row"><span>${i.title} × ${i.qty}</span><span>${formatPrice(i.price * i.qty)}</span></div>`).join("")}
+          <div class="summary-row total"><span>Total</span><span>${formatPrice(cartTotal(items))}</span></div>
+        </aside>
+      </div>
+    `;
+
+    document.getElementById("checkoutForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const submitBtn = e.target.querySelector("button[type=submit]");
+      submitBtn.disabled = true;
+
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const address = document.getElementById("address").value.trim();
+      const city = document.getElementById("city").value.trim();
+      const state = document.getElementById("state").value.trim();
+      const pincode = document.getElementById("pincode").value.trim();
+      const total = cartTotal(items);
+
+      try {
+        let paymentId = null;
+        let paymentStatus = "not_configured";
+
+        if (paymentsReady) {
+          submitBtn.textContent = "Opening payment window…";
+          paymentId = await openRazorpayCheckout({
+            amount: total,
+            name, email, phone,
+            description: `${items.length} item(s) from ValBooksStore`,
+          });
+          paymentStatus = "paid";
+        }
+
+        submitBtn.textContent = paymentsReady ? "Payment received — saving your order…" : "Saving your order…";
+
+        const order = {
+          name, email, phone, address, city, state, pincode,
+          items: items.map((i) => ({ id: i.id, title: i.title, price: i.price, qty: i.qty, language: i.language })),
+          total,
+          status: "placed",
+          paymentId,
+          paymentStatus,
+        };
+        const ref = await createOrder(order);
+        const fullAddress = `${address}, ${city}, ${state} - ${pincode}`;
+
+        await sendOrderConfirmationEmail({
+          toEmail: email,
+          toName: name,
+          orderId: ref.orderId,
+          items,
+          total: formatPrice(total),
+          address: fullAddress,
+          phone,
+        });
+
+        await sendAdminNewOrderAlert({
+          toName: name,
+          toEmail: email,
+          orderId: ref.orderId,
+          items,
+          total: formatPrice(total),
+          address: fullAddress,
+          phone,
+        });
+
+        clearCart();
+
+        const invoiceOrder = { ...order, id: ref.id, orderId: ref.orderId, createdAt: new Date() };
+        el.innerHTML = `
+          <div class="empty-state" style="max-width:480px; margin:0 auto;">
+            <h3>Order placed successfully!</h3>
+            <p>Order #${ref.orderId}${paymentsReady ? " — payment received," : "," } and a confirmation email is on its way to ${email}.</p>
+            <button class="btn btn-primary" id="downloadInvoiceBtn" style="margin-top:8px;">Download invoice</button>
+            <div style="margin-top:14px;">
+              <a href="index.html#shop" style="font-family:var(--font-ui); font-size:14px; color:var(--muted);">← Continue shopping</a>
+            </div>
+          </div>
+        `;
+        document.getElementById("downloadInvoiceBtn").addEventListener("click", async (e2) => {
+          const btn = e2.target;
+          btn.disabled = true;
+          btn.textContent = "Preparing invoice…";
+          try {
+            const { downloadInvoice } = await import("./js/invoice.js");
+            await downloadInvoice(invoiceOrder);
+          } catch (err) {
+            showToast(err.message || "Couldn't generate the invoice.");
+          } finally {
+            btn.disabled = false;
+            btn.textContent = "Download invoice";
+          }
+        });
+      } catch (err) {
+        console.error(err);
+        submitBtn.disabled = false;
+        submitBtn.textContent = paymentsReady ? "Proceed to payment" : "Place order";
+        showToast(err.message || "Could not complete checkout. Please try again.");
+      }
+    });
+  }
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ValBooksStore — Comics in English, Hindi &amp; Braille</title>
+<meta name="description" content="An independent comic publisher — the same stories across multiple regional languages, including embossed Braille editions." />
+<link rel="icon" type="image/png" href="images/favicon.png" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="wrap">
+    <a href="index.html" class="brand">
+      <img src="images/logo.png" alt="ValBooksStore" />
+    </a>
+    <div class="nav-search">
+      <input type="search" id="searchInput" placeholder="Search for books..." aria-label="Search books" />
+    </div>
+    <div class="nav-links">
+      <a href="index.html#shop">Shop</a>
+      <a href="wishlist.html" class="nav-cart">Wishlist <span class="count" data-wishlist-count style="display:none">0</span></a>
+      <a href="cart.html" class="nav-cart">Cart <span class="count" data-cart-count style="display:none">0</span></a>
+    </div>
+    <button class="nav-toggle btn btn-ghost" aria-label="Menu">☰</button>
+  </div>
+</nav>
+
+<div class="full-banner">
+  <img src="images/val-poster-banner.jpg" alt="Val Stories — children's comics by Laxmi Narasimhan K, illustrated by Naganath Gowripura" />
+</div>
+
+<section class="shop-section" id="shop" style="padding-top:44px;">
+  <div class="wrap">
+    <div class="shop-head">
+      <div>
+        <h2>Browse the collection</h2>
+      </div>
+      <div class="pill-row" id="langFilters">
+        <button class="pill active" data-lang="all"><span class="dot-cell active" data-pattern="all"><span></span><span></span><span></span><span></span><span></span><span></span></span> All books</button>
+        <!-- language pills render here, populated from js/db.js -->
+      </div>
+      <select class="lang-select-mobile" id="langFilterMobile" aria-label="Filter by language">
+        <option value="all">All books</option>
+        <!-- language options render here, populated from js/db.js -->
+      </select>
+    </div>
+
+    <div id="demoNotice"></div>
+
+    <div id="bookGrid" class="book-grid">
+      <div class="skeleton" style="aspect-ratio:1/1;"></div>
+      <div class="skeleton" style="aspect-ratio:1/1;"></div>
+      <div class="skeleton" style="aspect-ratio:1/1;"></div>
+      <div class="skeleton" style="aspect-ratio:1/1;"></div>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <a href="index.html" class="footer-brand" id="footerLogo">
+          <img src="images/logo.png" alt="ValBooksStore" />
+    </a>
+        <p class="footer-note">An independent comic publisher — every story across multiple regional languages, including embossed Braille editions.</p>
+      </div>
+      <div class="footer-links">
+        <a href="index.html#shop">Shop</a>
+        <a href="terms.html">Terms</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="refund-policy.html">Refunds</a>
+        <a href="cancellation-policy.html">Cancellations</a>
+        <a href="admin/login.html">Admin</a>
+      </div>
+    </div>
+    <div class="footer-bottom">© <span id="year"></span> ValBooksStore. All rights reserved.</div>
+  </div>
+</footer>
+
+<script type="module">
+  import { getBooks, getLanguages } from "./js/db.js";
+  import { addToCart } from "./js/cart.js";
+  import { toggleWishlist, isWishlisted } from "./js/wishlist.js";
+  import { initNav, formatPrice, langTagHtml, setLanguageCache, showToast } from "./js/ui.js";
+  import { isConfigured } from "./js/firebase-init.js";
+
+  document.getElementById("year").textContent = new Date().getFullYear();
+  initNav();
+
+  if (!isConfigured()) {
+    document.getElementById("demoNotice").innerHTML = `<div class="setup-banner">
+      <strong>You're viewing sample books.</strong> Connect Firebase in <code>js/config.js</code> to replace these
+      with your real catalogue — see <code>README.md</code> for setup steps.
+    </div>`;
+  }
+
+  function renderLanguagePills(languages) {
+    const row = document.getElementById("langFilters");
+    const select = document.getElementById("langFilterMobile");
+    const knownPatterns = ["all", "english", "hindi", "braille"];
+    languages.forEach((lang) => {
+      const combined = `${lang.code} ${lang.label}`.toLowerCase();
+      const isBraille = typeof lang.isBraille === "boolean" ? lang.isBraille : combined.includes("braille");
+      const pattern = isBraille ? "braille"
+        : knownPatterns.find((p) => combined.includes(p)) || "all";
+      const btn = document.createElement("button");
+      btn.className = "pill";
+      btn.dataset.lang = lang.code;
+      btn.innerHTML = `<span class="dot-cell active" data-pattern="${pattern}"><span></span><span></span><span></span><span></span><span></span><span></span></span> ${lang.label}`;
+      row.appendChild(btn);
+
+      const option = document.createElement("option");
+      option.value = lang.code;
+      option.textContent = lang.label;
+      select.appendChild(option);
+    });
+  }
+
+  let allBooks = [];
+  let activeLang = "all";
+  let searchQuery = "";
+
+  function coverFallback(book) {
+    return `<div style="width:100%;height:100%;display:grid;place-items:center;background:var(--bg-tint);color:var(--ink);font-family:var(--font-display);font-weight:700;text-align:center;padding:14px;font-size:15px;">${book.title}</div>`;
+  }
+
+  function priceRow(b) {
+    const price = Number(b.price);
+    const mrp = Number(b.mrp);
+    if (mrp && mrp > price) {
+      const pct = Math.round((1 - price / mrp) * 100);
+      return `
+        <div class="book-price-row">
+          <span class="book-mrp">${formatPrice(mrp)}</span>
+          <span class="book-price">${formatPrice(price)}</span>
+          <span class="book-discount">(${pct}% off)</span>
+        </div>`;
+    }
+    return `<div class="book-price-row"><span class="book-price">${formatPrice(price)}</span></div>`;
+  }
+
+  function render() {
+    const grid = document.getElementById("bookGrid");
+    let books = activeLang === "all" ? allBooks : allBooks.filter((b) => b.language === activeLang);
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      books = books.filter((b) => b.title.toLowerCase().includes(q));
+    }
+
+    if (!books.length) {
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">
+        <h3>No books found</h3>
+        <p>${allBooks.length ? "Try a different search or language." : "The shop owner hasn't added any books yet — check back soon."}</p>
+      </div>`;
+      return;
+    }
+
+    grid.innerHTML = books.map((b) => `
+      <article class="book-card">
+        <a href="book.html?id=${b.id}" class="book-cover">
+          ${langTagHtml(b.language)}
+          ${b.coverImageUrl ? `<img src="${b.coverImageUrl}" alt="Cover of ${b.title}" loading="lazy" />` : coverFallback(b)}
+        </a>
+        <div class="book-body">
+          <a href="book.html?id=${b.id}" class="book-title">${b.title}</a>
+          ${b.author ? `<div class="book-author">by ${b.author}</div>` : ""}
+          ${priceRow(b)}
+          <div class="book-delivery">Standard delivery in 3-5 days</div>
+          <div class="book-actions">
+            <button class="wishlist-btn${isWishlisted(b.id) ? " active" : ""}" data-wish="${b.id}" aria-label="Add to wishlist">${isWishlisted(b.id) ? "♥" : "♡"}</button>
+            <button class="btn btn-primary" data-add="${b.id}">Add to cart</button>
+          </div>
+        </div>
+      </article>
+    `).join("");
+
+    grid.querySelectorAll("[data-add]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const book = allBooks.find((b) => b.id === btn.dataset.add);
+        addToCart(book, 1);
+        showToast(`Added “${book.title}” to your cart.`);
+      });
+    });
+
+    grid.querySelectorAll("[data-wish]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const book = allBooks.find((b) => b.id === btn.dataset.wish);
+        const added = toggleWishlist(book);
+        btn.classList.toggle("active", added);
+        btn.textContent = added ? "♥" : "♡";
+        showToast(added ? `Saved “${book.title}” to your wishlist.` : `Removed “${book.title}” from your wishlist.`);
+      });
+    });
+  }
+
+  document.getElementById("searchInput").addEventListener("input", (e) => {
+    searchQuery = e.target.value;
+    render();
+  });
+
+  document.getElementById("langFilters").addEventListener("click", (e) => {
+    const pill = e.target.closest(".pill");
+    if (!pill) return;
+    document.querySelectorAll(".pill").forEach((p) => p.classList.remove("active"));
+    pill.classList.add("active");
+    activeLang = pill.dataset.lang;
+    document.getElementById("langFilterMobile").value = activeLang;
+    render();
+  });
+
+  document.getElementById("langFilterMobile").addEventListener("change", (e) => {
+    activeLang = e.target.value;
+    document.querySelectorAll(".pill").forEach((p) => p.classList.toggle("active", p.dataset.lang === activeLang));
+    render();
+  });
+
+  (async () => {
+    try {
+      const [languages, books] = await Promise.all([getLanguages(), getBooks()]);
+      setLanguageCache(languages);
+      renderLanguagePills(languages);
+      allBooks = books;
+    } catch (err) {
+      console.error(err);
+      allBooks = [];
+    }
+    render();
+  })();
+</script>
+</body>
+</html>

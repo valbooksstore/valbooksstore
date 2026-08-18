@@ -1,0 +1,136 @@
+<!--
+  ValBooksStore — ADMIN new-order alert → paste into template_91hnc1i
+  This one is simple on purpose: it does exactly one job, telling YOU
+  that a new order came in. It does not need any of the dynamic
+  {{{body_html}}} tricks used by the customer template.
+
+  Paste this into EmailJS: open your existing template_91hnc1i →
+  switch the content editor to "Code Editor" (</> icon) → replace
+  everything with this file.
+
+  Variables used:
+    {{customer_name}}
+    {{customer_email}}
+    {{order_id}}
+    {{items_html}}     ⚠ use triple braces in the body: {{{items_html}}}
+    {{total}}
+    {{address}}
+    {{phone}}
+
+  Template settings (right-hand panel in EmailJS):
+    To Email:    your-admin-email@example.com   ← type this directly, fixed,
+                 NOT a variable — that's what makes this always go to you,
+                 no matter who placed the order.
+    From Name:   ValBooksStore Orders
+    Subject:     🔔 New order {{order_id}} — {{total}}
+-->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#EAE1C8; padding:32px 16px; font-family:Arial,Helvetica,sans-serif;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color:#FFFDF8; border-radius:6px; overflow:hidden; max-width:600px;">
+
+        <!-- Header -->
+        <tr>
+          <td style="background-color:#7A1F2B; padding:24px 32px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="font-family:Georgia,'Times New Roman',serif; font-size:20px; font-weight:bold; color:#FFFDF8;">
+                  New order received
+                </td>
+                <td align="right" style="font-family:Arial,sans-serif; font-size:11px; letter-spacing:1px; color:#F3ECD8; text-transform:uppercase;">
+                  Admin alert
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Customer -->
+        <tr>
+          <td style="padding:28px 32px 0 32px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F3ECD8; border-radius:4px;">
+              <tr>
+                <td style="padding:16px 18px;">
+                  <p style="margin:0 0 4px 0; font-family:Arial,sans-serif; font-size:12px; color:#746C5A; text-transform:uppercase; letter-spacing:0.5px;">
+                    Customer
+                  </p>
+                  <p style="margin:0; font-family:Georgia,'Times New Roman',serif; font-size:17px; color:#1B2A41;">
+                    {{customer_name}}
+                  </p>
+                  <p style="margin:2px 0 0 0; font-family:Arial,sans-serif; font-size:13px; color:#746C5A;">
+                    {{customer_email}}
+                  </p>
+                </td>
+                <td align="right" style="padding:16px 18px; vertical-align:top;">
+                  <p style="margin:0 0 4px 0; font-family:Arial,sans-serif; font-size:12px; color:#746C5A; text-transform:uppercase; letter-spacing:0.5px;">
+                    Order ID
+                  </p>
+                  <p style="margin:0; font-family:Arial,sans-serif; font-size:13px; color:#1B2A41; font-weight:bold;">
+                    {{order_id}}
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Items -->
+        <tr>
+          <td style="padding:24px 32px 0 32px;">
+            <p style="margin:0 0 10px 0; font-family:Arial,sans-serif; font-size:12px; font-weight:bold; color:#1B2A41; text-transform:uppercase; letter-spacing:0.5px;">
+              Items ordered
+            </p>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #D9CFB8;">
+              {{{items_html}}}
+            </table>
+          </td>
+        </tr>
+
+        <!-- Total -->
+        <tr>
+          <td style="padding:8px 32px 0 32px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:2px solid #1B2A41; margin-top:6px;">
+              <tr>
+                <td style="padding:14px 0 0 0; font-family:Arial,sans-serif; font-size:15px; font-weight:bold; color:#1B2A41;">
+                  Total
+                </td>
+                <td align="right" style="padding:14px 0 0 0; font-family:Arial,sans-serif; font-size:18px; font-weight:bold; color:#7A1F2B;">
+                  {{total}}
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Fulfillment details -->
+        <tr>
+          <td style="padding:28px 32px 0 32px;">
+            <p style="margin:0 0 10px 0; font-family:Arial,sans-serif; font-size:12px; font-weight:bold; color:#1B2A41; text-transform:uppercase; letter-spacing:0.5px;">
+              Ship to
+            </p>
+            <p style="margin:0 0 4px 0; font-family:Arial,sans-serif; font-size:14px; line-height:1.6; color:#2B2620;">
+              {{address}}
+            </p>
+            <p style="margin:0; font-family:Arial,sans-serif; font-size:14px; color:#746C5A;">
+              Phone: {{phone}}
+            </p>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="padding:32px; padding-top:28px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #D9CFB8; padding-top:16px;">
+              <tr>
+                <td style="padding-top:16px; font-family:Arial,sans-serif; font-size:12px; color:#9A927E; line-height:1.6;">
+                  Sent automatically from ValBooksStore checkout. Fulfil this order from your admin dashboard.
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin Login — ValBooksStore</title>
+<link rel="icon" type="image/png" href="../images/favicon.png" />
+<link rel="stylesheet" href="../css/style.css" />
+</head>
+<body class="admin-shell">
+
+<section class="form-page">
+  <div class="wrap">
+    <div class="form-card">
+      <div style="text-align:center; margin-bottom:14px;">
+        <img src="../images/logo.png" alt="ValBooksStore" style="height:44px; width:auto; margin:0 auto;" />
+      </div>
+      <h1>Admin</h1>
+      <p class="form-sub">Sign in to manage the ValBooksStore catalogue.</p>
+      <div id="setupBanner"></div>
+      <div id="formMsg" class="form-msg"></div>
+      <form id="loginForm">
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" type="email" required autocomplete="email" />
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" type="password" required autocomplete="current-password" />
+        </div>
+        <button class="btn btn-primary btn-block" type="submit">Sign in</button>
+      </form>
+      <div class="form-foot"><a href="../index.html">← Back to the shop</a></div>
+    </div>
+  </div>
+</section>
+
+<script type="module">
+  import { auth, isConfigured, signInWithEmailAndPassword, signOut } from "../js/firebase-init.js";
+  import { isAdminEmail } from "../js/ui.js";
+
+  if (!isConfigured()) {
+    document.getElementById("setupBanner").innerHTML = `<div class="setup-banner">
+      <strong>Firebase isn't connected yet.</strong> Add your project config in <code>js/config.js</code>,
+      then list your admin email in <code>ADMIN_EMAILS</code>. See <code>README.md</code>.
+    </div>`;
+    document.getElementById("loginForm").querySelector("button").disabled = true;
+  }
+
+  const msg = document.getElementById("formMsg");
+  function showMsg(text, type) {
+    msg.textContent = text;
+    msg.className = `form-msg show ${type}`;
+  }
+
+  document.getElementById("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    try {
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      if (!isAdminEmail(cred.user.email)) {
+        await signOut(auth);
+        showMsg("This account doesn't have admin access.", "error");
+        return;
+      }
+      window.location.href = "dashboard.html";
+    } catch (err) {
+      showMsg("Couldn't sign in — check your email and password.", "error");
+    }
+  });
+</script>
+</body>
+</html>
